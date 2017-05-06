@@ -4,6 +4,9 @@ import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.DefaultItemAnimator;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.View;
@@ -11,13 +14,20 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import java.sql.Time;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
-
+    private List<Task> taskList = new ArrayList<>();
+    private RecyclerView recyclerView;
+    private MyAdapter mAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -35,6 +45,9 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        /**
+         * Button listener assignment
+         */
         Button btnSubmitTask = (Button) findViewById(R.id.btnSubmitTask);
         btnSubmitTask.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -51,6 +64,8 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        final EditText eTTask = (EditText) findViewById(R.id.eTTask);
+
         /**
          *  DATABASE OPERATIONs
          */
@@ -58,30 +73,50 @@ public class MainActivity extends AppCompatActivity {
 
         /**
          * CRUD Operations
-         * */
-        TextView tvTaskList = (TextView) findViewById(R.id.tVTaskList);
+         */
 
         // Reading all contacts
         Log.d("Reading: ", "Reading all tasks..");
         List<Task> todos = db.getAllTodos();
-        String allTask = "";
 
         /**
-         * ListView
+         * Recyclerview
          */
-        ListView lv = (ListView) findViewById(R.id.listView1);
-        for (Task td : todos) {
-            String log = "Id: " + td.getID() + " ,Task: " + td.getTask();
-            // Writing Contacts to log
-            Log.d("Task: ", log);
+        recyclerView = (RecyclerView) findViewById(R.id.my_recycler_view);
 
-            allTask += td.getTask() + "\n";
+        mAdapter = new MyAdapter(taskList); // buat connect recyclerView / adapter ke list Tasklist
+        RecyclerView.LayoutManager mLayoutManager = new LinearLayoutManager(getApplicationContext());
+        recyclerView.setLayoutManager(mLayoutManager);
+        recyclerView.setItemAnimator(new DefaultItemAnimator());
+        recyclerView.addItemDecoration(new DividerItemDecoration(this, LinearLayoutManager.VERTICAL));
 
-//            TextView childTv = new TextView();
-//            childTv.setText(td.getTask());
-//            lv.addView(childTv);
-        }
-        tvTaskList.setText(allTask);
+        recyclerView.setAdapter(mAdapter);
+
+        recyclerView.addOnItemTouchListener(new RecyclerTouchListener(getApplicationContext(), recyclerView, new ClickListener() {
+            @Override
+            public void onClick(View view, int position) {
+                Task task = taskList.get(position);
+                Toast.makeText(getApplicationContext(), task.getTask() + " is selected!", Toast.LENGTH_SHORT).show();
+                eTTask.setText(task.getTask());
+            }
+
+            @Override
+            public void onLongClick(View view, int position) {
+
+            }
+        }));
+
+        taskList.clear();
+        taskList.addAll(todos);
+//        for (Task td : todos) {
+//            String log = "Id: " + td.getID() + " ,Task: " + td.getTask();
+//            // Writing Contacts to log
+//            Log.d("Task: ", log);
+//
+//            taskList.add(td);
+//
+//        }
+
 
 
     }
@@ -111,66 +146,74 @@ public class MainActivity extends AppCompatActivity {
 
     public void setTask() {
         EditText eTTask = (EditText) findViewById(R.id.eTTask);
-        TextView tVStatus = (TextView) findViewById(R.id.tVTask);
-        TextView tvTaskList = (TextView) findViewById(R.id.tVTaskList);
 
         String task = eTTask.getText().toString();
         if (!task.isEmpty()) {
-            tVStatus.setText(String.format("Added task : %s", task));
 
             DatabaseHandler db = new DatabaseHandler(this);
-            db.addTodo(new Task(task));
 
-            List<Task> todos = db.getAllTodos();
-            String taskList = "";
-            for (Task td : todos) {
-                taskList += td._task + "\n";
-            }
-            tvTaskList.setText(taskList);
+            String timeStamp = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(Calendar.getInstance().getTime());
+
+
+            db.addTodo(new Task(task,timeStamp));
+
+            taskList.clear();
+            taskList.addAll(db.getAllTodos());
+            Log.d("Result:",Integer.toString(db.getTodoByName(task)._id));
+
             eTTask.setText("");
+
+            Snackbar.make(findViewById(R.id.coordinator_layout),
+                    String.format("%s successfuly added", task),
+                    Snackbar.LENGTH_SHORT)
+                    .show();
         } else {
-            tVStatus.setText("Input task first!");
+            Toast.makeText(this, "Input task first!", Toast.LENGTH_SHORT).show();
         }
     }
 
     public void deleteTask() {
         EditText eTTask = (EditText) findViewById(R.id.eTTask);
-        TextView tVStatus = (TextView) findViewById(R.id.tVTask);
-        TextView tvTaskList = (TextView) findViewById(R.id.tVTaskList);
 
         String task = eTTask.getText().toString();
         if (!task.isEmpty()) {
             try {
                 DatabaseHandler db = new DatabaseHandler(this);
                 Task td = db.getTodoByName(task);
-                String taskTD = td.getTask();
-                Log.d("Result:", taskTD);
 
-                if (td.getID() > 0) {
+                Log.d("Result:", td.getID()+" "+td.getTask());
+
+                if (td.getID() >= 0) {
+                    String id = Integer.toString(td.getID());
+                    taskList.clear();
+                    Log.d("Debug is empty ", Boolean.toString(taskList.isEmpty()));
                     db.deleteTodo(td);
+                    Log.d("Debug:", id+" "+ td.getTask()+" deleted from db (supposedly)");
+                    eTTask.setText("");
 
                     List<Task> todos = db.getAllTodos();
-                    String taskList = "";
-                    for (Task tds : todos) {
-                        taskList += tds._task + "\n";
-                    }
-                    tvTaskList.setText(taskList);
-                } else {
-                    Log.d("Error:", String.format("%d doesn't exist in database", task));
-                }
+                    taskList.addAll(todos);
+                    mAdapter.notifyDataSetChanged(); // update the recyclerview
+                    Snackbar.make(findViewById(R.id.coordinator_layout),
+                            String.format("%s successfuly deleted", td.getTask()),
+                            Snackbar.LENGTH_SHORT)
+                            .show();
 
-                eTTask.setText("");
-                tVStatus.setText(String.format("Deleted task : %s", task));
+                } else {
+                    Log.d("Error:", String.format("%s doesn't exist in database", task));
+
+                }
 
             } catch (Exception err) {
 
                 Log.d("Error:", err.toString());
-                tVStatus.setText(String.format("%s doesn't exist in database", task));
+                Toast.makeText(this, String.format("%s doesn't exist in database", task), Toast.LENGTH_SHORT).show();
             }
         } else {
-            tVStatus.setText("Input task first!");
+            Toast.makeText(this, "Input task first!", Toast.LENGTH_SHORT).show();
         }
 
     }
+
 
 }
