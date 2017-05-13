@@ -157,10 +157,11 @@ public class DatabaseHandler extends SQLiteOpenHelper {
 
     // Getting contacts Count
     public int getTodosCount() {
-        String countQuery = "SELECT  * FROM " + TABLE_TODOS;
         SQLiteDatabase db = this.getReadableDatabase();
+        String countQuery = "SELECT  * FROM " + TABLE_TODOS;
+
         Cursor cursor = db.rawQuery(countQuery, null);
-        cursor.close();
+
 
         // return count
         return cursor.getCount();
