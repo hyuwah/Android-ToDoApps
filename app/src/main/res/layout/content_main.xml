@@ -42,7 +42,7 @@
                 android:layout_height="match_parent"
                 android:layout_margin="4dp"
                 android:padding="8dp"
-                android:text="Hello World! Lorem Ipsum Dolor Sit Amet"
+                android:text="@string/Intro_Help_Text"
                 android:textColor="@android:color/white" />
 
         </android.support.v7.widget.CardView>

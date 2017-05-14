@@ -5,11 +5,13 @@ import android.support.v7.widget.RecyclerView;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
+import android.widget.CheckBox;
 
 public class RecyclerTouchListener implements RecyclerView.OnItemTouchListener {
 
     private GestureDetector gestureDetector;
     private ClickListener clickListener;
+
 
     public RecyclerTouchListener(Context context, final RecyclerView recyclerView, final ClickListener clickListener) {
         this.clickListener = clickListener;
@@ -32,9 +34,12 @@ public class RecyclerTouchListener implements RecyclerView.OnItemTouchListener {
     @Override
     public boolean onInterceptTouchEvent(RecyclerView rv, MotionEvent e) {
 
+
         View child = rv.findChildViewUnder(e.getX(), e.getY());
         if (child != null && clickListener != null && gestureDetector.onTouchEvent(e)) {
-            clickListener.onClick(child, rv.getChildAdapterPosition(child));
+
+                clickListener.onClick(child, rv.getChildAdapterPosition(child));
+
         }
         return false;
     }

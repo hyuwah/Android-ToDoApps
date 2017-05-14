@@ -3,7 +3,6 @@ package com.hyuwah.todoapps;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.os.Bundle;
-import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
@@ -12,7 +11,6 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
-import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.Menu;
@@ -21,19 +19,16 @@ import android.view.animation.AccelerateInterpolator;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.view.animation.DecelerateInterpolator;
-import android.view.inputmethod.EditorInfo;
-import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.getbase.floatingactionbutton.FloatingActionsMenu;
 
-import java.sql.Time;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Date;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
@@ -41,6 +36,7 @@ public class MainActivity extends AppCompatActivity {
     private RecyclerView recyclerView;
     private MyAdapter mAdapter;
     final Context c = this;
+    final List<Task> taskToDelete = new ArrayList<>();
 
 
     @Override
@@ -55,7 +51,8 @@ public class MainActivity extends AppCompatActivity {
          * FAB Input add
          */
 
-        final com.getbase.floatingactionbutton.FloatingActionButton fab = (com.getbase.floatingactionbutton.FloatingActionButton) findViewById(R.id.fab_add);
+        final com.getbase.floatingactionbutton.FloatingActionButton fab =
+                (com.getbase.floatingactionbutton.FloatingActionButton) findViewById(R.id.fab_add);
         fab.startAnimation(animation);
         fab.setOnClickListener(new View.OnClickListener() {
 
@@ -72,7 +69,7 @@ public class MainActivity extends AppCompatActivity {
                         .setPositiveButton("Add", new DialogInterface.OnClickListener() {
                             public void onClick(DialogInterface dialogBox, int id) {
                                 // ToDo get user input here
-                                setTask(taskInput.getText().toString());
+                                addTask(taskInput.getText().toString());
                             }
                         })
 
@@ -90,25 +87,73 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        final List<Task> taskToDelete = new ArrayList<>();
+
         /**
          * FAB Input delete
          */
 
-        final com.getbase.floatingactionbutton.FloatingActionButton fabdelete = (com.getbase.floatingactionbutton.FloatingActionButton) findViewById(R.id.fab_delete);
+        final com.getbase.floatingactionbutton.FloatingActionButton fabdelete =
+                (com.getbase.floatingactionbutton.FloatingActionButton) findViewById(R.id.fab_delete);
         fabdelete.startAnimation(animation);
         fabdelete.setOnClickListener(new View.OnClickListener() {
 
             @Override
             public void onClick(View view) {
 
-                if (!taskToDelete.isEmpty()) {
-                    deleteTask(taskToDelete.get(0).getTask());
-                    fabdelete.setVisibility(View.INVISIBLE);
-                }else{
-                    Toast.makeText(c, "Nothing to delete", Toast.LENGTH_SHORT).show();
-                    fabdelete.setVisibility(View.INVISIBLE);
-                }
+                AlertDialog.Builder alertDialogBuilderUserInput = new AlertDialog.Builder(c);
+                alertDialogBuilderUserInput
+                        .setMessage(String.format("Are you sure you want to delete %d tasks?", taskToDelete.size()))
+                        .setCancelable(true)
+                        .setNegativeButton("Delete", new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialogBox, int id) {
+
+                                //DELETE
+                                if (!taskToDelete.isEmpty()) {
+                                    // Loop delete tasktoDelete
+                                    for (int i = 0; i < taskToDelete.size(); i++) {
+                                        deleteTask(taskToDelete.get(i).getTask());
+                                    }
+
+                                    if (taskToDelete.size() == 1) {
+                                        Snackbar.make(findViewById(R.id.coordinator_layout),
+                                                String.format("%s successfuly deleted", taskToDelete.get(0)._task),
+                                                Snackbar.LENGTH_SHORT)
+                                                .show();
+                                    } else {
+                                        Snackbar.make(findViewById(R.id.coordinator_layout),
+                                                String.format("%d tasks successfuly deleted", taskToDelete.size()),
+                                                Snackbar.LENGTH_SHORT)
+                                                .show();
+                                    }
+
+                                    taskToDelete.clear(); // all deleted, clear list
+
+                                    // Clear all checkboxes
+                                    RecyclerView rv = (RecyclerView) findViewById(R.id.my_recycler_view);
+                                    for (int j = 0; j < rv.getChildCount(); j++) {
+                                        View item = rv.getChildAt(j);
+                                        CheckBox cBox = (CheckBox) item.findViewById(R.id.cbTask);
+                                        cBox.setChecked(false);
+                                    }
+
+                                } else {
+                                    Toast.makeText(c, "Nothing to delete", Toast.LENGTH_SHORT).show();
+                                }
+                                fabdelete.setVisibility(View.INVISIBLE);
+                            }
+                        })
+
+                        .setPositiveButton("Cancel",
+                                new DialogInterface.OnClickListener() {
+                                    public void onClick(DialogInterface dialogBox, int id) {
+                                        dialogBox.cancel();
+                                    }
+                                });
+
+
+                AlertDialog alertDialogAndroid = alertDialogBuilderUserInput.create();
+                alertDialogAndroid.show();
+
             }
         });
 
@@ -147,29 +192,99 @@ public class MainActivity extends AppCompatActivity {
         recyclerView.addOnItemTouchListener(new RecyclerTouchListener(getApplicationContext(), recyclerView, new ClickListener() {
             @Override
             public void onClick(View view, int position) {
-                Task task = taskList.get(position);
-                Toast.makeText(getApplicationContext(), task.getTask() + " is selected!", Toast.LENGTH_SHORT).show();
+                com.getbase.floatingactionbutton.FloatingActionButton fabdelete =
+                        (com.getbase.floatingactionbutton.FloatingActionButton) findViewById(R.id.fab_delete);
 
-                com.getbase.floatingactionbutton.FloatingActionButton fabdelete = (com.getbase.floatingactionbutton.FloatingActionButton) findViewById(R.id.fab_delete);
+                Task task = taskList.get(position); // Get task id
 
-                fabdelete.setVisibility(View.VISIBLE);
-                fabdelete.startAnimation(animation);
+                CheckBox cbTask = (CheckBox) view.findViewById(R.id.cbTask);
 
-                taskToDelete.clear();
-                taskToDelete.add(task);
+                if (cbTask.isChecked()) {//Unselect
+
+
+                    //Remove from listChecked
+                    taskToDelete.remove(task);
+
+                    cbTask.setChecked(false);
+
+                } else if (!cbTask.isChecked()) {//Select
+
+
+                    // Add to listChecked
+                    // taskToDelete.clear();
+                    taskToDelete.add(task);
+
+                    cbTask.setChecked(true);
+                    Toast.makeText(getApplicationContext(), task.getTask() + " is selected!", Toast.LENGTH_SHORT).show();
+                }
+
+                if (taskToDelete.size() == 0) {
+                    fabdelete.setVisibility(View.INVISIBLE);
+                } else if (taskToDelete.size() == 1) {
+                    fabdelete.setVisibility(View.VISIBLE);
+                    fabdelete.startAnimation(animation);
+                } else {
+                    fabdelete.setVisibility(View.VISIBLE);
+                }
+
+
             }
 
             @Override
             public void onLongClick(View view, int position) {
-                Task task = taskList.get(position);
-                deleteTask(task.getTask());
+                final int pos = position;
+                final Task task = taskList.get(pos);
+                AlertDialog.Builder alertDialogBuilderUserInput = new AlertDialog.Builder(c);
+                alertDialogBuilderUserInput
+                        .setCancelable(true)
+                        .setNegativeButton("Delete", new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialogBox, int id) {
+
+                                Snackbar.make(findViewById(R.id.coordinator_layout),
+                                        String.format("%s successfuly deleted", task._task),
+                                        Snackbar.LENGTH_SHORT)
+                                        .show();
+
+                                deleteTask(task.getTask());
+
+                                taskToDelete.clear(); // all deleted, clear list
+
+                                // Clear all checkboxes
+                                RecyclerView rv = (RecyclerView) findViewById(R.id.my_recycler_view);
+                                for (int j = 0; j < rv.getChildCount(); j++) {
+                                    View item = rv.getChildAt(j);
+                                    CheckBox cBox = (CheckBox) item.findViewById(R.id.cbTask);
+                                    cBox.setChecked(false);
+                                }
+
+                                fabdelete.setVisibility(View.INVISIBLE);
+                            }
+                        })
+                        .setMessage(String.format("%s selected", task._task))
+                        .setNeutralButton("Edit", new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialogBox, int id) {
+
+                                editTask(task._id);
+                                Toast.makeText(c, "Edited", Toast.LENGTH_SHORT).show();
+                            }
+                        })
+                        .setPositiveButton("Cancel",
+                                new DialogInterface.OnClickListener() {
+                                    public void onClick(DialogInterface dialogBox, int id) {
+                                        dialogBox.cancel();
+                                    }
+                                });
+
+
+                AlertDialog alertDialogAndroid = alertDialogBuilderUserInput.create();
+                alertDialogAndroid.show();
             }
         }));
 
         // FAB HIDE ON SCROLL
         final FloatingActionsMenu fabmenu = (FloatingActionsMenu) findViewById(R.id.fabmenu);
-        recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener()
-        {   int scrollDist = 0;
+        recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            int scrollDist = 0;
             boolean isVisible = true;
             static final float MINIMUM = 25;
 
@@ -192,8 +307,7 @@ public class MainActivity extends AppCompatActivity {
                     hide();
                     scrollDist = 0;
                     isVisible = false;
-                }
-                else if (!isVisible && scrollDist < -MINIMUM) {
+                } else if (!isVisible && scrollDist < -MINIMUM) {
                     show();
                     scrollDist = 0;
                     isVisible = true;
@@ -207,10 +321,8 @@ public class MainActivity extends AppCompatActivity {
             }
 
             @Override
-            public void onScrollStateChanged(RecyclerView recyclerView, int newState)
-            {
-                if (newState == RecyclerView.SCROLL_STATE_IDLE)
-                {
+            public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
+                if (newState == RecyclerView.SCROLL_STATE_IDLE) {
                     fabmenu.setVisibility(View.VISIBLE);
                 }
 
@@ -227,7 +339,7 @@ public class MainActivity extends AppCompatActivity {
 //            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
 //                boolean handled = false;
 //                if (actionId == EditorInfo.IME_ACTION_SEND) {
-//                    setTask();
+//                    addTask();
 //                    handled = true;
 //                }
 //                return handled;
@@ -258,8 +370,65 @@ public class MainActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
+    public void editTask(final int taskId) {
+        final DatabaseHandler db = new DatabaseHandler(this);
 
-    public void setTask(String taskInput) {
+        LayoutInflater layoutInflaterAndroid = LayoutInflater.from(c);
+        View mView = layoutInflaterAndroid.inflate(R.layout.user_input_dialog_box, null);
+        final TextView taskInputTV = (TextView) mView.findViewById(R.id.dialogTitle);
+        taskInputTV.setText("Edit Task");
+        final EditText taskInput = (EditText) mView.findViewById(R.id.eTTask);
+        final Task tobeUpdated = db.getTodo(taskId);
+        taskInput.setText(tobeUpdated.getTask());
+        taskInput.setSelection(taskInput.length());
+        AlertDialog.Builder alertDialogBuilderUserInput = new AlertDialog.Builder(c);
+        alertDialogBuilderUserInput.setView(mView);
+//        alertDialogBuilderUserInput.setTitle("Edit");
+        alertDialogBuilderUserInput.setPositiveButton("Edit",
+                new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialogBox, int id) {
+
+
+                        if (taskInput.getText().toString() != null) {
+                            Log.d("Debug: ", taskInput.getText().toString());
+                            tobeUpdated._task = taskInput.getText().toString();
+
+                            db.updateTodo(tobeUpdated);
+
+                            taskList.clear();
+                            List<Task> todos = db.getAllTodos();
+                            taskList.addAll(todos);
+                            mAdapter.notifyDataSetChanged();
+
+                        }
+
+                        taskToDelete.clear();
+                        // Clear all checkboxes
+                        RecyclerView rv = (RecyclerView) findViewById(R.id.my_recycler_view);
+                        for (int j = 0; j < rv.getChildCount(); j++) {
+                            View item = rv.getChildAt(j);
+                            CheckBox cBox = (CheckBox) item.findViewById(R.id.cbTask);
+                            cBox.setChecked(false);
+                        }
+                        com.getbase.floatingactionbutton.FloatingActionButton fabdelete =
+                                (com.getbase.floatingactionbutton.FloatingActionButton) findViewById(R.id.fab_delete);
+                        fabdelete.setVisibility(View.INVISIBLE);
+                    }
+                });
+        alertDialogBuilderUserInput.setNegativeButton("Cancel",
+                new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialogBox, int id) {
+                        dialogBox.cancel();
+                    }
+                });
+        alertDialogBuilderUserInput.create();
+        alertDialogBuilderUserInput.show();
+
+
+    }
+
+
+    public void addTask(String taskInput) {
 
         String task = taskInput;
         if (!task.isEmpty()) {
@@ -308,10 +477,10 @@ public class MainActivity extends AppCompatActivity {
                     List<Task> todos = db.getAllTodos();
                     taskList.addAll(todos);
                     mAdapter.notifyDataSetChanged(); // update the recyclerview
-                    Snackbar.make(findViewById(R.id.coordinator_layout),
-                            String.format("%s successfuly deleted", td.getTask()),
-                            Snackbar.LENGTH_SHORT)
-                            .show();
+//                    Snackbar.make(findViewById(R.id.coordinator_layout),
+//                            String.format("%s successfuly deleted", td.getTask()),
+//                            Snackbar.LENGTH_SHORT)
+//                            .show();
 
                 } else {
                     Log.d("Error:", String.format("%s doesn't exist in database", task));
