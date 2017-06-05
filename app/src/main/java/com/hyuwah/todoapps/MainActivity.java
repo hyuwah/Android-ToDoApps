@@ -6,19 +6,23 @@ import android.os.Bundle;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.CardView;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
+import android.support.v7.widget.helper.ItemTouchHelper;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.ViewGroup;
 import android.view.animation.AccelerateInterpolator;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.view.animation.DecelerateInterpolator;
+import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.TextView;
@@ -38,13 +42,18 @@ public class MainActivity extends AppCompatActivity {
     final Context c = this;
     final List<Task> taskToDelete = new ArrayList<>();
 
+    private static final int TIME_DELAY = 2000;
+    private static long back_pressed;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        toolbar.setTitle("");
+        toolbar.setLogo(R.mipmap.ic_launcher);
         setSupportActionBar(toolbar);
+
 
         final Animation animation = AnimationUtils.loadAnimation(this, R.anim.simple_grow);
         /**
@@ -215,12 +224,12 @@ public class MainActivity extends AppCompatActivity {
                     taskToDelete.add(task);
 
                     cbTask.setChecked(true);
-                    Toast.makeText(getApplicationContext(), task.getTask() + " is selected!", Toast.LENGTH_SHORT).show();
+                    //Toast.makeText(getApplicationContext(), task.getTask() + " is selected!", Toast.LENGTH_SHORT).show();
                 }
 
                 if (taskToDelete.size() == 0) {
                     fabdelete.setVisibility(View.INVISIBLE);
-                } else if (taskToDelete.size() == 1) {
+                } else if (taskToDelete.size() == 1 && fabdelete.getVisibility() == View.INVISIBLE ) {
                     fabdelete.setVisibility(View.VISIBLE);
                     fabdelete.startAnimation(animation);
                 } else {
@@ -239,25 +248,42 @@ public class MainActivity extends AppCompatActivity {
                         .setCancelable(true)
                         .setNegativeButton("Delete", new DialogInterface.OnClickListener() {
                             public void onClick(DialogInterface dialogBox, int id) {
+                                final AlertDialog.Builder confirmationDialog = new AlertDialog.Builder(c);
+                                confirmationDialog
+                                        .setMessage("Are you sure you want to delete this tasks?")
+                                        .setCancelable(true)
+                                        .setNegativeButton("Yes", new DialogInterface.OnClickListener() {
+                                            public void onClick(DialogInterface dialogBox, int id) {
 
-                                Snackbar.make(findViewById(R.id.coordinator_layout),
-                                        String.format("%s successfuly deleted", task._task),
-                                        Snackbar.LENGTH_SHORT)
-                                        .show();
+                                                Snackbar.make(findViewById(R.id.coordinator_layout),
+                                                        String.format("%s successfuly deleted", task._task),
+                                                        Snackbar.LENGTH_SHORT)
+                                                        .show();
 
-                                deleteTask(task.getTask());
+                                                deleteTask(task.getTask());
 
-                                taskToDelete.clear(); // all deleted, clear list
+                                                taskToDelete.clear(); // all deleted, clear list
 
-                                // Clear all checkboxes
-                                RecyclerView rv = (RecyclerView) findViewById(R.id.my_recycler_view);
-                                for (int j = 0; j < rv.getChildCount(); j++) {
-                                    View item = rv.getChildAt(j);
-                                    CheckBox cBox = (CheckBox) item.findViewById(R.id.cbTask);
-                                    cBox.setChecked(false);
-                                }
+                                                // Clear all checkboxes
+                                                RecyclerView rv = (RecyclerView) findViewById(R.id.my_recycler_view);
+                                                for (int j = 0; j < rv.getChildCount(); j++) {
+                                                    View item = rv.getChildAt(j);
+                                                    CheckBox cBox = (CheckBox) item.findViewById(R.id.cbTask);
+                                                    cBox.setChecked(false);
+                                                }
 
-                                fabdelete.setVisibility(View.INVISIBLE);
+                                                fabdelete.setVisibility(View.INVISIBLE);
+                                            }
+                                        })
+                                        .setPositiveButton("No",new DialogInterface.OnClickListener() {
+                                            public void onClick(DialogInterface dialogBox, int id) {
+                                                dialogBox.cancel();
+                                            }
+                                        });
+
+                                AlertDialog confirmationDial = confirmationDialog.create();
+                                confirmationDial.show();
+
                             }
                         })
                         .setMessage(String.format("%s selected", task._task))
@@ -345,7 +371,27 @@ public class MainActivity extends AppCompatActivity {
 //                return handled;
 //            }
 //        });
+        /**
+        * Button intro
+        */
+        final Button button = (Button) findViewById(R.id.btnRemoveCardIntro);
+        button.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                removeIntro();
+            }
+        });
 
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (back_pressed + TIME_DELAY > System.currentTimeMillis()) {
+            super.onBackPressed();
+        } else {
+            Toast.makeText(getBaseContext(), "Tap back again to exit",
+                    Toast.LENGTH_SHORT).show();
+        }
+        back_pressed = System.currentTimeMillis();
     }
 
     @Override
@@ -384,7 +430,7 @@ public class MainActivity extends AppCompatActivity {
         AlertDialog.Builder alertDialogBuilderUserInput = new AlertDialog.Builder(c);
         alertDialogBuilderUserInput.setView(mView);
 //        alertDialogBuilderUserInput.setTitle("Edit");
-        alertDialogBuilderUserInput.setPositiveButton("Edit",
+        alertDialogBuilderUserInput.setPositiveButton("Ok",
                 new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialogBox, int id) {
 
@@ -435,7 +481,7 @@ public class MainActivity extends AppCompatActivity {
 
             DatabaseHandler db = new DatabaseHandler(this);
 
-            String timeStamp = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(Calendar.getInstance().getTime());
+            String timeStamp = new SimpleDateFormat("EEE, dd/MM/yy - HH:mm:ss").format(Calendar.getInstance().getTime());
 
 
             db.addTodo(new Task(task, timeStamp));
@@ -498,5 +544,11 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
+
+    public void removeIntro (){
+        CardView cv1 = (CardView) findViewById(R.id.cvIntro);
+        ViewGroup parent = (ViewGroup) cv1.getParent();
+        parent.removeView(cv1);
+    }
 
 }

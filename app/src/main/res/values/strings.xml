@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">ToDoApps</string>
-    <string name="action_settings">Settings</string>
-    <string name="Intro_Help_Text">Tap \"Add FAB\" to add task.\nTap the task and \"Delete FAB\" or long tap the task to delete task</string>
+    <string name="app_name">ToDo!</string>
+    <string name="action_settings">Settings (Placeholder)</string>
+    <string name="Intro_Help_Text">To add task, tap the green FAB.\nTo delete task, select the task you want to delete (can be multiple) and tap the red FAB.\nIndividual task can be long tapped to be edited or deleted.</string>
 </resources>

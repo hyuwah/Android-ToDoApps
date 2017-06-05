@@ -10,45 +10,49 @@
     <android.support.design.widget.AppBarLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:theme="@style/AppTheme.AppBarOverlay">
+        android:theme="@style/AppTheme.AppBarOverlay"
+        >
 
         <android.support.v7.widget.Toolbar
             android:id="@+id/toolbar"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
             android:background="?attr/colorPrimary"
-            app:popupTheme="@style/AppTheme.PopupOverlay" />
+            app:popupTheme="@style/AppTheme.PopupOverlay" >
+
+        </android.support.v7.widget.Toolbar>
 
     </android.support.design.widget.AppBarLayout>
 
     <include layout="@layout/content_main" />
 
 
-
     <com.getbase.floatingactionbutton.FloatingActionsMenu
         android:id="@+id/fabmenu"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="bottom|end">
+        android:layout_gravity="bottom|end"
+        app:fab_addButtonColorNormal="@color/colorAccent"
+        app:fab_addButtonColorPressed="#DFDF2A81"
+        app:fab_addButtonPlusIconColor="#f0f0f0">
 
-        <com.getbase.floatingactionbutton.FloatingActionButton
-            xmlns:fab="http://schemas.android.com/apk/res-auto"
+        <com.getbase.floatingactionbutton.FloatingActionButton xmlns:fab="http://schemas.android.com/apk/res-auto"
             android:id="@+id/fab_delete"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:visibility="invisible"
-            fab:fab_icon="@mipmap/ic_launcher"
-            fab:fab_colorNormal="@color/colorPrimaryDark"
-            fab:fab_colorPressed="#505fbf" />
-        <com.getbase.floatingactionbutton.FloatingActionButton
-        xmlns:fab="http://schemas.android.com/apk/res-auto"
-        android:id="@+id/fab_add"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+            fab:fab_colorNormal="#b01515"
+            fab:fab_colorPressed="#801515"
+            fab:fab_icon="@drawable/ic_delete" />
 
-        fab:fab_icon="@mipmap/ic_launcher"
-        fab:fab_colorNormal="@color/colorAccent"
-        fab:fab_colorPressed="#ff70B1" />
+        <com.getbase.floatingactionbutton.FloatingActionButton xmlns:fab="http://schemas.android.com/apk/res-auto"
+            android:id="@+id/fab_add"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+
+            fab:fab_colorNormal="#15b015"
+            fab:fab_colorPressed="#158015"
+            fab:fab_icon="@drawable/ic_edit" />
     </com.getbase.floatingactionbutton.FloatingActionsMenu>
 
 </android.support.design.widget.CoordinatorLayout>
